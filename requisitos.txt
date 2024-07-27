@@ -1,0 +1,6 @@
+Requisitos para rodar.
+flask
+sqlite3
+datetime
+threading
+requests

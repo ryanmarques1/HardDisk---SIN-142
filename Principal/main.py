@@ -1,3 +1,5 @@
+
+""""
 from banco_privado import *
 
 def mostrar_menu():
@@ -50,3 +52,4 @@ if __name__ == "__main__":
         mostrar_menu()
         opcao = input("Escolha uma opção: ")
         continuar = executar_opcao(opcao)
+"""
