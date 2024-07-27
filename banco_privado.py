@@ -6,10 +6,26 @@ from datetime import datetime
 import threading
 import requests
 from validate_docbr import CPF #Verificar 
+import json
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
+#Pegar token para fazer requisições ao Core
+token = "0"
+global_token = None
+def puxa_token():
+    global global_token
+    response = loginI()
+    try:
+        global_token = response.get("token")
+    except json.JSONDecodeError:
+        global_token = None
+    
+def printa_token():
+    global global_token
+    return global_token
+#Pegar token para fazer requisições ao Core
 
 # Criação do banco de dados e tabelas
 def create_connection(db_file):
@@ -92,7 +108,27 @@ def get_user_by_id(conn, user_id):
     cur.execute("SELECT * FROM usuarios WHERE id=?", (user_id,))
     return cur.fetchone()
 
+
+#Requisição banco CORE
+def loginI():
+        
+        try:
+            headers = {'Content-Type': 'application/json'}
+            payload = {
+                'id_i': '1',
+                'token': '12'
+            }
+            
+            response = requests.post('http://179.189.94.124/auth', json=payload, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        
+        except requests.exceptions.HTTPError as http_err:
+            print(f'Httpamsnajsn {http_err}')
+        except:
+            print(f'Other ijauahs {http_err}')
 # Interface do Banco
+
 class BancoA:
     cpf_v = CPF()
     def __init__(self, conn):
@@ -163,6 +199,7 @@ class BancoA:
                     return {"status": "error", "message": data['message']}
             else:
                 return {"status": "error", "message": "Erro ao processar a transferência."}
+    
 
 banco_a = BancoA(conn)
 
@@ -246,5 +283,12 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
+@app.route('/loginI', methods=['POST'])
+def loginIi():
+    response = printa_token()
+    return response
+
 if __name__ == '__main__':
+    puxa_token()
+    print(f'Token Global: {global_token}')
     app.run(debug=True, port=5000)

@@ -6,3 +6,4 @@ datetime
 threading
 requests
 validate-docbr
+axios
