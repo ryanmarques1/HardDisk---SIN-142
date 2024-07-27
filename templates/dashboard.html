@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Olá, {{ user[1] }}!</h1>
+        <p class="saldo">Saldo: R$ {{ saldo }}</p>
+        <p class="chave-pix">Chave PIX: {{ user[7] }}</p>
+
+        <h2>Operações</h2>
+
+        <h3>Depósito</h3>
+        <form method="post" action="/depositar">
+            Valor: <input type="number" step="0.01" name="valor" class="input-field"><br>
+            <input type="submit" value="Depositar" class="submit-button">
+        </form>
+
+        <h3>Retirada</h3>
+        <form method="post" action="/retirar">
+            Valor: <input type="number" step="0.01" name="valor" class="input-field"><br>
+            <input type="submit" value="Retirar" class="submit-button">
+        </form>
+
+        <h3>Definir Chave PIX</h3>
+        <form method="post" action="/definir_chave_pix">
+            Chave PIX (deixe vazio para usar o CPF): <input type="text" name="chave_pix" class="input-field"><br>
+            <input type="submit" value="Definir Chave PIX" class="submit-button">
+        </form>
+
+        <h3>Transferir</h3>
+        <form method="post" action="/transferir">
+            Chave PIX destino: <input type="text" name="chave_pix_destino" class="input-field"><br>
+            Valor: <input type="number" step="0.01" name="valor" class="input-field"><br>
+            <input type="submit" value="Transferir" class="submit-button">
+        </form>
+
+        <a href="/logout">Logout</a>
+    </div>
+</body>
+</html>
