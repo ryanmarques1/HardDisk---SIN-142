@@ -5,9 +5,11 @@ from hashlib import sha256
 from datetime import datetime
 import threading
 import requests
+from validate_docbr import CPF #Verificar 
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
+
 
 # Criação do banco de dados e tabelas
 def create_connection(db_file):
@@ -29,7 +31,8 @@ def create_table(conn):
                                         login TEXT NOT NULL UNIQUE,
                                         senha TEXT NOT NULL,
                                         saldo REAL DEFAULT 0.0,
-                                        chave_pix TEXT UNIQUE
+                                        chave_pix TEXT UNIQUE,
+                                        tel INTEGER[11]
                                     ); """
         conn.execute(sql_create_users_table)
     except Error as e:
@@ -48,12 +51,12 @@ def get_user_by_login(conn, login):
     cur.execute("SELECT * FROM usuarios WHERE login=?", (login,))
     return cur.fetchone()
 
-def create_user(conn, nome, cpf, data_nascimento, login, senha):
+def create_user(conn, nome, cpf, data_nascimento, login, senha, tel):
     senha_hashed = hash_password(senha)
-    sql = ''' INSERT INTO usuarios(nome, cpf, data_nascimento, login, senha)
-              VALUES(?,?,?,?,?) '''
+    sql = ''' INSERT INTO usuarios(nome, cpf, data_nascimento, login, senha, tel)
+              VALUES(?,?,?,?,?,?) '''
     cur = conn.cursor()
-    cur.execute(sql, (nome, cpf, data_nascimento, login, senha_hashed))
+    cur.execute(sql, (nome, cpf, data_nascimento, login, senha_hashed, tel))
     conn.commit()
     return cur.lastrowid
 
@@ -91,16 +94,17 @@ def get_user_by_id(conn, user_id):
 
 # Interface do Banco
 class BancoA:
+    cpf_v = CPF()
     def __init__(self, conn):
         self.conn = conn
         self.lock = threading.Lock()
 
-    def cadastrar_usuario(self, nome, cpf, data_nascimento, login, senha):
+    def cadastrar_usuario(self, nome, cpf, data_nascimento, login, senha, tel):
         try:
-            user_id = create_user(self.conn, nome, cpf, data_nascimento, login, senha)
+            user_id = create_user(self.conn, nome, cpf, data_nascimento, login, senha, tel)
             return {"status": "success", "message": "Usuário cadastrado com sucesso!", "user_id": user_id}
         except sqlite3.IntegrityError:
-            return {"status": "error", "message": "Erro: CPF ou login já existente."}
+            return {"status": "error", "message": "Erro: CPF existente ou inválido  ou login já existente."}
 
     def login_usuario(self, login, senha):
         user = login_user(self.conn, login, senha)
@@ -168,11 +172,13 @@ def index():
 
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
+    cpf_v = CPF()
     if request.method == 'POST':
         data = request.form
-        response = banco_a.cadastrar_usuario(data['nome'], data['cpf'], data['data_nascimento'], data['login'], data['senha'])
-        if response['status'] == 'success':
-            return redirect(url_for('login'))
+        response = banco_a.cadastrar_usuario(data['nome'], data['cpf'], data['data_nascimento'], data['login'], data['senha'], data['tel'])
+        if cpf_v.validate(data['cpf']): #Validando CPF
+            if response['status'] == 'success':
+                return redirect(url_for('login'))
         else:
             return render_template('cadastro.html', error=response['message'])
     return render_template('cadastro.html')

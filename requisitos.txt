@@ -1,6 +1,8 @@
 Requisitos para rodar.
+python3+
 flask
 sqlite3
 datetime
 threading
 requests
+validate-docbr
