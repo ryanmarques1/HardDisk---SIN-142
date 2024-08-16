@@ -1,0 +1,5 @@
+#Requisitos para rodar.
+flask
+datetime
+requests
+validate-docbr
