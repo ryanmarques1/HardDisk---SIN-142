@@ -78,3 +78,8 @@ def register_routes(app, banco_a):
         valor = float(request.form['valor'])
         response = banco_a.transferir(user_id, chave_pix_destino, valor)
         return redirect(url_for('dashboard'))
+
+    @app.route('/logout')
+    def logout():
+        session.pop('user_id', None)
+        return redirect(url_for('login'))
