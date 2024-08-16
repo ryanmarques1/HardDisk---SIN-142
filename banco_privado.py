@@ -3,7 +3,7 @@ from datetime import datetime
 from validate_docbr import CPF
 
 
-import bancoA
+from bancoA import BancoA
 import conexao
 import functionsBD  
 import requisicoes
@@ -18,7 +18,7 @@ conn = conexao.create_connection(database)
 functionsBD.create_table(conn)
 
 # Interface do Banco
-banco_a = bancoA(conn)
+banco_a = BancoA(conn)
 # Interface do Banco
 
 
@@ -59,7 +59,7 @@ def dashboard():
         return redirect(url_for('login'))
     user_id = session['user_id']
     user = banco_a.get_user_by_id(user_id)
-    saldo = bancoA.get_saldo(conn, user_id)
+    saldo = functionsBD.get_saldo(conn, user_id)
     return render_template('dashboard.html', user=user, saldo=saldo)
 
 @app.route('/depositar', methods=['POST'])
@@ -108,6 +108,7 @@ def logout():
 def loginIi():
     response = requisicoes.printa_token()
     return response
+#Rotas com o Core
 
 if __name__ == '__main__':
     #requisicoes.puxa_token()
