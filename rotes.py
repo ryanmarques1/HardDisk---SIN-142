@@ -83,3 +83,10 @@ def register_routes(app, banco_a):
     def logout():
         session.pop('user_id', None)
         return redirect(url_for('login'))
+    
+    @app.route('/loginCore', methods=['POST'])
+    def loginCore():
+        response = requisicoes.requisicao_core()
+        return response
+        
+
