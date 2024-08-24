@@ -1,7 +1,0 @@
-services:
-  web:
-    build: .
-    image: ryanmarques/web
-    ports:
-      - "8000:5000"
-  

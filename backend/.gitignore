@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv
+
+# Environment
+env/
+
+# Docker
+*.dockerignore
+
+# Kubernetes
+*.yaml

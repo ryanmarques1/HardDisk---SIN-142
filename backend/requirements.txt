@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+cassandra-driver
+pika
+pydantic
+validate-docbr
+psycopg2
+requests
+python-jose[cryptography]
+passlib[bcrypt]
