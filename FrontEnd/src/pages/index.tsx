@@ -1,5 +1,7 @@
 import type { NextPage } from 'next'
+import Image from 'next/image'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 import { signIn, useSession } from 'next-auth/react';
 
 import { SignInButton } from '../components/Buttons'
@@ -9,6 +11,7 @@ import { Dashboard } from '../screens/Dashboard';
 
 const Home: NextPage = () => {
   const {data: session} = useSession();
+  const router = useRouter()
 
   return (
     <div className={styles.container}>
@@ -23,8 +26,13 @@ const Home: NextPage = () => {
       ) : (
         <main className={styles.main}>
           {session }
-          <img src='/nubanklogo.svg' alt='nubank'/>
-          <SignInButton onClick={() => signIn('github')} />
+          <Image 
+            src='/calvologo.svg' 
+            width={250}
+            height={280}
+            alt='nubank'
+          />
+          <SignInButton onClick={() => router.push('/login')} />
         </main>
       )}
     </div>

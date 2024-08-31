@@ -10,7 +10,7 @@ export const Container = styled.header`
   width: 100%;
   padding: 16px 48px;
 
-  background-color: ${theme.background};
+  background-color: #fff;
 
   img {
     max-width: 44px;

@@ -17,7 +17,7 @@ export const ShortcutContainer = styled(motion.div)`
 
   padding: 14px;
 
-  background-color: ${theme.white};
+  background-color: #FFF;
 
   border-radius: 10px;
 
@@ -33,7 +33,7 @@ export const ShortcutContainer = styled(motion.div)`
 
     border-radius: 71px;
 
-    background-color: ${theme.lightGray};
+    background-color: #E8E8F0;
   }
 
   p {
@@ -41,7 +41,7 @@ export const ShortcutContainer = styled(motion.div)`
     margin-top: 8px;
     font-weight: 500;
     font-size: 0.75rem;
-    color: ${theme.darkGray}
+    color: #7A7A80
   }
 `;
 
@@ -58,7 +58,7 @@ export const BasicContainer = styled(motion.div)`
   width: 100%;
   height: 100%;
 
-  background-color: ${theme.white};
+  background-color: #FFF;
 `;
 
 export const CreditHeader = styled(motion.div)`
@@ -78,7 +78,7 @@ export const CreditHeader = styled(motion.div)`
 
   p:last-child {
     font-weight: 400;
-    color: ${theme.darkGray};
+    color: #7A7A80;
 
     span {
       font-weight: 500;
@@ -125,7 +125,7 @@ export const Box = styled(motion.div)`
     p {
       font-weight: 500;
       font-size: 0.875rem;
-      color: ${theme.darkGray};
+      color: #7A7A80;
     }
   }
 `;
@@ -146,7 +146,7 @@ export const BarContainer = styled.div`
   height: 7px;
   width: 100%;
 
-  background-color: ${theme.orange};
+  background-color: #FF7900;
   border-radius: 7px;
 
   overflow: hidden;

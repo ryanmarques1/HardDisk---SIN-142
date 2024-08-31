@@ -10,7 +10,7 @@ export const Container = styled.div`
 
   padding: 24px 48px;
 
-  background-color: ${theme.primary};
+  background-color: #fff;
 
   @media(max-width: 720px) {
     padding: 24px;
@@ -24,13 +24,13 @@ export const UserInformationContainer = styled.div`
 
   h3 {
     font-size: 0.875rem;
-    color: ${theme.white};
+    color: #fff;
     font-weight: 500;
   }
 
   h1 {
     font-size: 1.125rem;
-    color: ${theme.white};
+    color: #fff;
     font-weight: 700;
 
     margin-top: 0.25rem;
@@ -65,16 +65,16 @@ export const AnnounceCard = styled.div`
 
   border-radius: 10px;
 
-  background-color: ${theme.purpleGray};
+  background-color: #DED2ED;
 
   p {
     font-size: 0.75rem;
-    color: ${theme.black};
+    color: #000;
     line-height: 24px;
   }
 
   span {
-    color: ${theme.primary};
+    color: #fff;
     cursor: pointer;
   }
 
@@ -91,5 +91,5 @@ export const WageSkeleton = styled(motion.span)`
   bottom: 0;
   border-radius: 2px;
 
-  background-color: ${theme.purpleGray};
+  background-color: #DED2ED;
 `;

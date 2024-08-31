@@ -6,7 +6,7 @@ export const Container = styled(motion.div)`
   display: flex;
   flex-direction: column;
 
-  background-color: ${theme.white};
+  background-color: #FFF;
 
   box-shadow: 0px 0px 23px -1px rgba(0, 0, 0, 0.1);
 
@@ -33,7 +33,7 @@ export const Option = styled(motion.div).attrs({ whileHover: { x: 7 } })`
 
   cursor: pointer;
 
-  border-top: 1px solid ${theme.lightGray};
+  border-top: 1px solid #E8E8F0;
   padding: 16px 0;
 
   div {
@@ -48,7 +48,7 @@ export const Option = styled(motion.div).attrs({ whileHover: { x: 7 } })`
 
     p {
       font-size: 0.875rem;
-      color: ${theme.darkGray};
+      color: #7A7A80;
       font-weight: 500;
     }
   }

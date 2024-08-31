@@ -9,8 +9,8 @@ export const SignInButton = ({...rest}: HTMLMotionProps<'button'>) => {
       whileTap={{ y: 2 }}
       {...rest}
     >
-      <img src='/githublogo.svg' alt='github' />
-      Login com Github
+      <img src='/githublogo.svg' alt='login' />
+      Login
     </ButtonContainer>
   )
 }

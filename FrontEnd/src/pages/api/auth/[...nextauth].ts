@@ -1,6 +1,6 @@
 import axios from "axios";
 import NextAuth from "next-auth"
-import Providers from "next-auth/providers"
+import Credentials from "next-auth/providers/credentials"
 
 type NextAuthSession = {
   id: string;
@@ -24,7 +24,7 @@ export default NextAuth({
   },
 
   providers: [
-    Providers.Credentials({
+    Credentials({
       name: 'Credentials',
       credentials: {},
       async authorize(credentials) {
