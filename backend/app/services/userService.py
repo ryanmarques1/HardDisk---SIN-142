@@ -19,7 +19,7 @@ def cadastrar_usuario(data: CadastroData, db):
     
     with db.cursor(cursor_factory=RealDictCursor) as cursor:
         # Verifica se o login já existe no banco de dados
-        cursor.execute("SELECT * FROM usuarios WHERE login = %s;", (data.login,))
+        cursor.execute("SELECT * FROM usuarios WHERE email = %s;", (data.email,))
         user = cursor.fetchone()
         if user:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Login already exists")
@@ -30,10 +30,10 @@ def cadastrar_usuario(data: CadastroData, db):
         # Insere o novo usuário no banco de dados
         cursor.execute(
             """
-            INSERT INTO usuarios (nome, cpf, data_nascimento, login, senha, tel)
+            INSERT INTO usuarios (nome, cpf, data_nascimento, email, senha, tel)
             VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;
             """,
-            (data.nome, data.cpf, data.data_nascimento, data.login, hashed_password, data.tel)
+            (data.nome, data.cpf, data.data_nascimento, data.email, hashed_password, data.tel)
         )
         
         user_id = cursor.fetchone()["id"]
@@ -42,7 +42,7 @@ def cadastrar_usuario(data: CadastroData, db):
     # Gera o token JWT para o novo usuário
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": data.login},  # "sub" contém o login do usuário
+        data={"sub": data.email},  # "sub" contém o login do usuário
         expires_delta=access_token_expires
     )
     
@@ -52,13 +52,13 @@ def cadastrar_usuario(data: CadastroData, db):
 def login_usuario(data: LoginData, db):
     with db.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(
-            "SELECT id, login, senha FROM usuarios WHERE login = %s;",
-            (data.login,)
+            "SELECT id, email, senha, nome, cpf, data_nascimento, tel FROM usuarios WHERE login = %s;",
+            (data.email,)
         )
         user = cursor.fetchone()
 
         # Verifica se o usuário existe e se a senha está correta
-        if not user or not verify_password(data.senha, user['senha']):
+        if not user or not verify_password(data.password, user['senha']):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid login credentials"
@@ -67,12 +67,22 @@ def login_usuario(data: LoginData, db):
         # Cria o token JWT para o usuário autenticado
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user['login']},  # O "sub" contém o login do usuário
+            data={"sub": user['email']},  # O "sub" contém o login do usuário
             expires_delta=access_token_expires
         )
 
         # Retorna o token JWT
-        return {"access_token": access_token, "token_type": "bearer"}
+        return {
+            "jwt": access_token,
+            "data": {
+                "id": user['id'],
+                "email": user['email'],
+                "nome": user['nome'],
+                "cpf": user['cpf'],
+                "data_nascimento": user['data_nascimento'],
+                "tel": user['tel']
+            }
+        }
 
 # Função para obter um usuário pelo login
 def get_user_by_login(db, login):
@@ -83,16 +93,34 @@ def get_user_by_login(db, login):
 # Função para atualizar o saldo
 def update_saldo(db, user_id, valor):
     with db.cursor(cursor_factory=RealDictCursor) as cursor:
-        cursor.execute(
-            """
-            UPDATE usuarios
-            SET saldo = saldo + %s
-            WHERE id = %s;
-            """,
-            (valor, user_id)
-        )
-        db.commit()
-    return {"message": "Saldo updated successfully"}
+        try:
+            # Atualiza o saldo do usuário
+            cursor.execute(
+                """
+                UPDATE usuarios
+                SET saldo = saldo + %s
+                WHERE id = %s;
+                """,
+                (valor, user_id)
+            )
+            
+            # Insere um registro na tabela de operações
+            cursor.execute(
+                """
+                INSERT INTO operacoes (tipo, user_id, valor)
+                VALUES (%s, %s, %s);
+                """,
+                ("credito" if valor > 0 else "debito", user_id, valor)
+            )
+            
+            # Confirma as transações
+            db.commit()
+            
+            return {"message": "Saldo updated and operation recorded successfully"}
+        except Exception as e:
+            db.rollback()
+            return {"error": str(e)}
+
 
 # Função para obter o saldo do usuário
 def get_saldo(db, user_id):
@@ -101,19 +129,45 @@ def get_saldo(db, user_id):
         saldo = cursor.fetchone()["saldo"]
     return {"saldo": saldo}
 
-# Função para definir uma chave PIX para o usuário
-def set_chave_pix(db, user_id, chave_pix):
+def get_operacoes(db, user_id):
     with db.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(
             """
-            UPDATE usuarios
-            SET chave_pix = %s
-            WHERE id = %s;
+            SELECT id, tipo, user_id, valor, data_operacoes
+            FROM operacoes
+            WHERE user_id = %s
+            ORDER BY data_operacoes DESC;
             """,
-            (chave_pix, user_id)
+            (user_id,)
         )
-        db.commit()
-    return {"message": "Chave PIX updated successfully"}
+        operacoes = cursor.fetchall()
+        if not operacoes:
+            raise HTTPException(status_code=404, detail="No operations found for this user")
+        return operacoes
+
+# Função para definir uma chave PIX para o usuário
+def set_chave_pix(db, user_id, chave_pix, tipo_chave):
+    with db.cursor(cursor_factory=RealDictCursor) as cursor:
+        try:
+            # Insere uma nova chave PIX na tabela chave_pix
+            cursor.execute(
+                """
+                INSERT INTO chave_pix (user_id, tipo_chave, chave_pix)
+                VALUES (%s, %s, %s);
+                """,
+                (user_id, tipo_chave, chave_pix)
+            )
+            db.commit()
+            return {"message": "Chave PIX cadastrada com sucesso"}
+        except Exception as e:
+            db.rollback()
+            return {"error": str(e)}
+
+# Função para obter um usuário pelo ID do usuario
+def get_chave_pix_by_user_id(db, user_id):
+    with db.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute("SELECT * FROM chave_pix WHERE user_id = %s;", (user_id,))
+        return cursor.fetchall()
 
 # Função para obter um usuário pelo ID
 def get_user_by_id(db, user_id):

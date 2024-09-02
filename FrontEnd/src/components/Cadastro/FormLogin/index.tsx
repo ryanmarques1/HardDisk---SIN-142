@@ -12,17 +12,19 @@ export type FormCadastroProps = {
 export type FormData = {
   nome: string;
   sobrenome: string;
+  data_nasc: string;
   cpf: string;
   email: string;
   senha: string;
   confirmarSenha: string;
   aceitarTermos: boolean;
+  cell: string;
 };
 
 const ScrollableDiv = styled.div`
   max-height: 90vw; /* Define a altura máxima para o scroll */
   overflow-y: auto; /* Ativa o scroll vertical */
-  padding-top: 50vh;
+  padding-top: 80vh;
   padding-bottom: 5vh;
 `;
 
@@ -30,11 +32,13 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
   const [formData, setFormData] = useState<FormData>({
     nome: '',
     sobrenome: '',
+    data_nasc: '',
     cpf: '',
     email: '',
     senha: '',
     confirmarSenha: '',
     aceitarTermos: false,
+    cell: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -46,6 +50,7 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
     const newErrors: Record<string, string> = {};
     if (!formData.nome) newErrors.nome = 'Nome é obrigatório';
     if (!formData.sobrenome) newErrors.sobrenome = 'Sobrenome é obrigatório';
+    if (!formData.data_nasc) newErrors.data_nasc = "Data de Nascimento é obrigatório"
     if (!formData.cpf) newErrors.cpf = 'CPF é obrigatório';
     if (!formData.email) newErrors.email = 'Email é obrigatório';
     if (!formData.senha) newErrors.senha = 'Senha é obrigatória';
@@ -53,6 +58,7 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
       newErrors.confirmarSenha = 'As senhas não coincidem';
     if (!formData.aceitarTermos)
       newErrors.aceitarTermos = 'Você deve aceitar os termos de uso';
+    if (!formData.cell) newErrors.cell = 'Número de celular é obrigatório';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -93,11 +99,26 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
           error={errors.sobrenome}
         />
         <TextInput
+          name="data_nasc"
+          label="Data de Nascimento"
+          onInputChange={(v) => handleInputChange('data_nasc', v)}
+          value={formData.data_nasc}
+          error={errors.data_nasc}
+        />
+        <TextInput
           name="cpf"
           label="CPF"
           onInputChange={(v) => handleInputChange('cpf', v)}
           value={formData.cpf}
           error={errors.cpf}
+        />
+        <TextInput
+          name="cell"
+          label="Celular"
+          onInputChange={(v) => handleInputChange('cell', v)}
+          value={formData.cell}
+          error={errors.cell}
+          type="password"
         />
         <TextInput
           name="email"
@@ -123,6 +144,7 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
           error={errors.confirmarSenha}
           type="password"
         />
+        
         {errors.aceitarTermos && (
           <Styled.ErrorMessage>{errors.aceitarTermos}</Styled.ErrorMessage>
         )}

@@ -35,21 +35,21 @@ export const Menu = () => {
         <img src="/angle-right-b.svg" alt="arrow" />
       </Option>
 
-      <Option>
+      {/* <Option>
         <div>
           <img src="/pix-black.svg" alt="help" />
           <p>Configurar chaves pix</p>
         </div>
         <img src="/angle-right-b.svg" alt="arrow" />
-      </Option>
+      </Option> */}
 
-      <Option>
+      {/* <Option>
         <div>
           <img src="/bag.svg" alt="help" />
           <p>Pedir conta PJ</p>
         </div>
         <img src="/angle-right-b.svg" alt="arrow" />
-      </Option>
+      </Option> */}
 
       <Option>
         <div>
@@ -67,13 +67,13 @@ export const Menu = () => {
         <img src="/angle-right-b.svg" alt="arrow" />
       </Option>
 
-      <Option>
+      {/* <Option>
         <div>
           <img src="/credit-card.svg" alt="help" />
           <p>Configurar cartão</p>
         </div>
         <img src="/angle-right-b.svg" alt="arrow" />
-      </Option>
+      </Option> */}
 
       <Option>
         <div>

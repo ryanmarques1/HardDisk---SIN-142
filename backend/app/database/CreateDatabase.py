@@ -66,6 +66,24 @@ def create_tables():
             valor NUMERIC NOT NULL,
             data_transferencia TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS operacoes (
+            id SERIAL PRIMARY KEY,
+            tipo VARCHAR(255) NOT NULL,
+            user_id INTEGER NOT NULL REFERENCES usuarios(id),
+            valor NUMERIC NOT NULL,
+            data_operacoes TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS chave_pix (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES usuarios(id),
+            tipo_chave VARCHAR(255) NOT NULL,
+            chave_pix VARCHAR(255) NOT NULL,
+            data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
         """
     )
 

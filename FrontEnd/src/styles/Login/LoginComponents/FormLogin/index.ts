@@ -41,5 +41,6 @@ export const ErrorMessage = styled.p`
     background: ${theme.colors.warning};
     color: ${theme.colors.white};
     padding: ${theme.spacings.xsmall} ${theme.spacings.small};
+    margin-bottom: 20px;
   `}
 `;

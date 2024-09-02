@@ -21,7 +21,7 @@ export default function LoginPage() {
     }
 
     const redirect = router.query?.redirect || '/';
-    router.push('/app/home');
+    router.push('/app/dashboard');
   };
 
   return (

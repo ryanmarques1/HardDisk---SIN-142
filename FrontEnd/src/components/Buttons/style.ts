@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import styled from 'styled-components';
 
 export const ButtonContainer = styled(motion.button)`
-  padding: 0.5rem 24px;
+  padding: 0.6rem 1.7rem;
 
   display: flex;
   justify-content: center;
@@ -13,7 +13,9 @@ export const ButtonContainer = styled(motion.button)`
 
   font-weight: 600;
 
-  font-size: 0.75rem;
+  font-size: 1rem;
+
+  background: #f0f0f0 ;
 
   img {
      margin-right: 10px;

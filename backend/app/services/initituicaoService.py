@@ -7,15 +7,15 @@ class BancoA:
     def __init__(self, conn):
         self.conn = conn
         self.lock = threading.Lock()
-    def cadastrar_usuario(self, nome, cpf, data_nascimento, login, senha, tel):
+    def cadastrar_usuario(self, nome, cpf, data_nascimento, email, senha, tel):
         try:
-            user_id = userService.create_user(self.conn, nome, cpf, data_nascimento, login, senha, tel)
+            user_id = userService.create_user(self.conn, nome, cpf, data_nascimento, email, senha, tel)
             return {"status": "success", "message": "Usuário cadastrado com sucesso!", "user_id": user_id}
         except sqlite3.IntegrityError:
             return {"status": "error", "message": "Erro: CPF existente ou inválido  ou login já existente."}
 
-    def login_usuario(self, login, senha):
-        user = userService.login_user(self.conn, login, senha)
+    def login_usuario(self, email, senha):
+        user = userService.login_user(self.conn, email, senha)
         if user:
             return {"status": "success", "message": "Login bem-sucedido!", "user": user}
         else:

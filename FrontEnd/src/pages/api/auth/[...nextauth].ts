@@ -1,115 +1,140 @@
 import axios from "axios";
-import NextAuth from "next-auth"
-import Credentials from "next-auth/providers/credentials"
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 
 type NextAuthSession = {
   id: string;
   jwt: string;
-  name: string;
-  surname: string;
-  image: any; 
+  nome: string;
   email: string;
-  expiration: number
+  cpf: string;
+  data_nascimento: string;
+  tel: string;
+  expiration: number;
 };
 
 export default NextAuth({
+  secret: process.env.NEXT_AUTH_SECRET,
+
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 dias
+  },
 
   jwt: {
-    signingKey: process.env.JWT_SIGNING_PRIVATE_KEY,
-  },
-  secret: process.env.NEXT_AUTH_SECRET,
-  session: {
-    jwt: true,
-    maxAge: 30 * 24 * 60 * 60,
+    secret: process.env.NEXT_AUTH_SECRET,
   },
 
   providers: [
-    Credentials({
-      name: 'Credentials',
+    CredentialsProvider({
+      name: "Credentials",
       credentials: {},
       async authorize(credentials) {
-        try{
-          const url = process.env.NEXT_PUBLIC_AXIOS_URL + '/api/login';
-          const response = await axios.post(url, credentials) 
-          const jwt = response.data.data.jwt;
-          const id = response.data.data[0].id;
-          const name = response.data.data[0].name;
-          const surname = response.data.data[0].surname;
-          const image = response.data.data[0];
-          const email = response.data.data[0].email;
+        try {
+          if (!credentials) {
+            throw new Error("As credenciais não foram fornecidas.");
+          }
 
-            if (!jwt) {
-              return null;
-            }
-            return {
-              jwt,
-              id,
-              name,
-              surname,
-              image,
-              email
-            };
-          } catch (e) {
-            console.log(e);
+          const url = `http://127.0.0.1:8000/login`;
+          const response = await axios.post(url, credentials)
+
+          if (!response.data?.data) {
+            throw new Error("Invalid response from login API");
+          }
+
+          const userData = response.data.data;
+          const jwt = response.data.jwt;
+          
+
+          if (!jwt || !userData) {
             return null;
+          }
+
+          return {
+            jwt,
+            id: userData.id,
+            nome: userData.nome,
+            email: userData.email,
+            cpf: userData.cpf,
+            tel: userData.tel,
+            data_nascimento: userData.data_nascimento,
+          };
+        } catch (error) {
+          console.error("Error in authorize:", error);
+          return null;
         }
-      }
-    })
+      },
+    }),
   ],
+
   callbacks: {
-    jwt: async (token: NextAuthSession, user: NextAuthSession) => {
-      const isSignIn = !!user;
-      const actualDateInSeconds = Math.floor(Date.now() / 1000);
-      const tokenExpirationInSeconds = Math.floor(7 * 24 * 60 * 60);
-
-      if (isSignIn) {
-        if (!user || !user.jwt || !user.name || !user.email || !user.id ||!user.image) {
-          return Promise.resolve({});
-        }
-
+    async jwt({ token, user }) {
+      if (user) {
         token.jwt = user.jwt;
         token.id = user.id;
-        token.name = user.name;
-        token.image = user.image;
-        token.surname = user.name;
-        token.email = user.email
+        token.nome = user.nome;
+        token.email = user.email;
+        token.cpf = user.cpf;
+        token.tel = user.tel;
+        token.data_nascimento = user.data_nascimento;
 
-        token.expiration = Math.floor(
-          actualDateInSeconds + tokenExpirationInSeconds,
-        );
-      } else {
-        if (!token?.expiration) return Promise.resolve({});
-
-        if (actualDateInSeconds > token.expiration) return Promise.resolve({});
-
+        const actualDateInSeconds = Math.floor(Date.now() / 1000);
+        const tokenExpirationInSeconds = 7 * 24 * 60 * 60;
+        token.expiration = actualDateInSeconds + tokenExpirationInSeconds;
       }
 
-      return Promise.resolve(token);
+      // Se o token expirou, zere todas as propriedades
+      if (typeof token.expiration === "number" && Date.now() / 1000 > token.expiration) {
+        return {
+          jwt: "",
+          id: "",
+          nome: "",
+          email: "",
+          cpf: "",
+          tel: "",
+          data_nascimento: "",
+          expiration: 0,
+        }; 
+      }
+
+      return token;
     },
-    session: async (session: any, token: NextAuthSession) => {
+
+    async session({ session, token }) {
+      // Verifique se todos os dados necessários estão presentes
       if (
-        !token?.jwt ||
-        !token?.id ||
-        !token?.expiration ||
-        !token?.email ||
-        !token?.name ||
-        !token?.image ||
-        !token?.surname
+        token?.jwt &&
+        token?.id &&
+        token?.email &&
+        token?.nome &&
+        token?.cpf &&
+        token?.tel &&
+        token?.data_nascimento
       ) {
-        return null;
+        // Se estiverem presentes, atualize a sessão com esses dados
+        session.accessToken = token.jwt;
+        session.user = {
+          id: (token.id).toString(),
+          nome: (token.nome).toString(),
+          email: (token.email).toString(),
+          cpf: (token.cpf).toString(),
+          tel: (token.tel).toString(),
+          data_nascimento: (token.data_nascimento).toString(),
+        };
+      } else {
+        // Zere os campos da sessão se o token estiver incompleto ou expirado
+        session.accessToken = "";
+        session.user = {
+          id: "",
+          nome: "",
+          email: "",
+          cpf: "",
+          tel: "",
+          data_nascimento: "",
+        };
       }
 
-      session.accessToken = token.jwt;
-      session.user = {
-        id: token.id,
-        name: token.name,
-        surname: token.surname,
-        email: token.email,
-        image: token.image
-       
-      };
-
-      return { ...session };
+      return session;
     },
   },
-})
+});
