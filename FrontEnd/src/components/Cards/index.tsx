@@ -68,11 +68,11 @@ export const CreditCard = () => {
 
           // Calcular entradas e saídas
           const totalEntrada = historicoData
-            .filter((item: any) => item.tipo === "credito")
+            .filter((item: any) => item.tipo === "dPix")
             .reduce((acc: number, curr: any) => acc + curr.valor, 0);
 
           const totalSaida = historicoData
-            .filter((item: any) => item.tipo === "debito")
+            .filter((item: any) => item.tipo === "sPix")
             .reduce((acc: number, curr: any) => acc + curr.valor, 0);
 
           setEntrada(totalEntrada);
@@ -102,7 +102,7 @@ export const CreditCard = () => {
           <Box>
             <Dot color={theme.green} />
             <div>
-              <h3>R$ {saldo.toFixed(2)}</h3>
+              <h3>R$ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldo)}</h3>
               <p>Saldo Atual</p>
             </div>
           </Box>
@@ -110,7 +110,7 @@ export const CreditCard = () => {
           <Box>
             <Dot color={theme.blue} />
             <div>
-              <h3>R$ {entrada.toFixed(2)}</h3>
+              <h3>R$ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(entrada)}</h3>
               <p>Valor de Entrada</p>
             </div>
           </Box>
@@ -118,7 +118,7 @@ export const CreditCard = () => {
           <Box>
             <Dot color={theme.orange} />
             <div>
-              <h3>R$ {saida.toFixed(2)}</h3>
+              <h3>R$ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saida)}</h3>
               <p>Valor de Saída</p>
             </div>
           </Box>

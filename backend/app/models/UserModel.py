@@ -24,6 +24,15 @@ class ChavePixData(BaseModel):
     chave_pix: str
     tipo_chave: str
 
+class PixKeyRequest(BaseModel):
+    chave_pix: str
+    tipo_chave: str
+    user_id: int
+    user_id_core: str
+
+class DeleteChavePixData(BaseModel):
+    user_id: int
+    chave_pix: str
 
 class TransferenciaData(BaseModel):
     chave_pix_destino: str

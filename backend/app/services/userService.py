@@ -1,12 +1,10 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from validate_docbr import CPF
 from psycopg2.extras import RealDictCursor
-from jose import jwt
-from datetime import timedelta
+from datetime import timedelta, datetime
 from app.services.auth import create_access_token, verify_password, get_password_hash
 from app.models.UserModel import CadastroData, LoginData, ValorData, ChavePixData, TransferenciaData
-from hashlib import sha256
-import psycopg2
+from app.services.coreServices import CoreService
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 1800
 
@@ -24,6 +22,12 @@ def cadastrar_usuario(data: CadastroData, db):
         if user:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Login already exists")
 
+        # Converte a data de 'dd/mm/yyyy' para 'yyyy-mm-dd'
+        try:
+            data_nascimento = datetime.strptime(data.data_nascimento, "%d/%m/%Y").strftime("%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date format")
+
         # Hash da senha antes de armazenar no banco de dados
         hashed_password = get_password_hash(data.senha)
         
@@ -33,7 +37,7 @@ def cadastrar_usuario(data: CadastroData, db):
             INSERT INTO usuarios (nome, cpf, data_nascimento, email, senha, tel)
             VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;
             """,
-            (data.nome, data.cpf, data.data_nascimento, data.email, hashed_password, data.tel)
+            (data.nome, data.cpf, data_nascimento, data.email, hashed_password, data.tel)
         )
         
         user_id = cursor.fetchone()["id"]
@@ -52,7 +56,7 @@ def cadastrar_usuario(data: CadastroData, db):
 def login_usuario(data: LoginData, db):
     with db.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(
-            "SELECT id, email, senha, nome, cpf, data_nascimento, tel FROM usuarios WHERE login = %s;",
+            "SELECT id, email, senha, nome, cpf, data_nascimento, tel FROM usuarios WHERE email = %s;",
             (data.email,)
         )
         user = cursor.fetchone()
@@ -146,22 +150,50 @@ def get_operacoes(db, user_id):
         return operacoes
 
 # Função para definir uma chave PIX para o usuário
-def set_chave_pix(db, user_id, chave_pix, tipo_chave):
+def set_chave_pix(db, user_id, tipo_chave, chave_pix, user_id_core, core_service: CoreService):
     with db.cursor(cursor_factory=RealDictCursor) as cursor:
         try:
-            # Insere uma nova chave PIX na tabela chave_pix
+            # Primeiro, tenta criar a chave no core
+            result = core_service.create_pix_key(chave_pix, tipo_chave, user_id_core)
+
+            # Se o core retornar sucesso, insere a nova chave PIX no banco de dados privado
             cursor.execute(
                 """
-                INSERT INTO chave_pix (user_id, tipo_chave, chave_pix)
-                VALUES (%s, %s, %s);
+                INSERT INTO chave_pix (user_id, tipo_chave, chave_pix, chave_pix_id_core)
+                VALUES (%s, %s, %s, %s);
                 """,
-                (user_id, tipo_chave, chave_pix)
+                (user_id, tipo_chave, chave_pix, result['data']['id'])
             )
             db.commit()
             return {"message": "Chave PIX cadastrada com sucesso"}
         except Exception as e:
             db.rollback()
             return {"error": str(e)}
+
+# Função para deletar uma chave PIX
+def delete_chave_pix(db, chave_pix, user_id, core_service: CoreService):
+    with db.cursor(cursor_factory=RealDictCursor) as cursor:
+        try:
+            cursor.execute("SELECT * FROM chave_pix WHERE user_id = %s AND chave_pix = %s;", (user_id, chave_pix))
+            resposta = cursor.fetchone()
+            chave_pix_id_core = resposta.get('chave_pix_id_core')
+            # Primeiro, tenta deletar a chave no core
+            core_service.delete_pix_key(chave_pix_id_core)
+
+            # Se o core retornar sucesso, deleta a chave PIX no banco de dados privado
+            cursor.execute(
+                """
+                DELETE FROM chave_pix WHERE user_id = %s AND chave_pix = %s;
+                """,
+                (user_id, chave_pix)
+            )
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Chave PIX não encontrada")
+            db.commit()
+            return {"message": "Chave PIX deletada com sucesso"}
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
 
 # Função para obter um usuário pelo ID do usuario
 def get_chave_pix_by_user_id(db, user_id):

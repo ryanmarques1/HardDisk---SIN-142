@@ -2,13 +2,13 @@ from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import JSONResponse
 from validate_docbr import CPF
-from app.services.initituicaoService import BancoA
-from app.models.UserModel import CadastroData, LoginData, ValorData, ChavePixData, TransferenciaData, SaldoData
-import app.services.userService as user_services
+from app.models.UserModel import CadastroData, LoginData, ValorData, ChavePixData, DeleteChavePixData, TransferenciaData, SaldoData, PixKeyRequest
+from app.services.auth import authenticate_user, create_access_token, get_current_user
+from app.services.coreServices import get_core_service, CoreService
 from app.database.Conection import get_db
+import app.services.userService as user_services
 from jose import JWTError, jwt
 from datetime import timedelta
-from app.services.auth import authenticate_user, create_access_token, get_current_user
 #import requisicoes
 
 router = APIRouter()
@@ -41,8 +41,12 @@ def get_operacoes_endpoint(user_id: int, db=Depends(get_db), current_user=Depend
     return user_services.get_operacoes(db, user_id)
 
 @router.post("/chave_pix")
-def set_chave_pix_endpoint(data: ChavePixData, db=Depends(get_db), current_user=Depends(get_current_user)):
-    return user_services.set_chave_pix(db, data.user_id, data.chave_pix, data.tipo_chave)
+def create_chave_pix(request: PixKeyRequest, db=Depends(get_db), core_service: CoreService = Depends(get_core_service), current_user=Depends(get_current_user)):
+    return user_services.set_chave_pix(db, request.user_id, request.tipo_chave, request.chave_pix, request.user_id_core, core_service)
+
+@router.delete("/chave_pix")
+def delete_chave_pix(data: DeleteChavePixData, db=Depends(get_db), core_service: CoreService = Depends(get_core_service), current_user=Depends(get_current_user)):
+    return user_services.delete_chave_pix(db, data.chave_pix, data.user_id, core_service)
 
 @router.get("/chave_pix")
 def get_chave_pix_by_user_id_endpoint(user_id: int, db=Depends(get_db), current_user=Depends(get_current_user)):

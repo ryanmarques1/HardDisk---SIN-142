@@ -17,7 +17,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2PasswordBearer define o endpoint de login que emite o token
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="email")
 
 # Função para verificar se a senha digitada corresponde ao hash
 def verify_password(plain_password, hashed_password):
@@ -46,7 +46,7 @@ class TokenData(BaseModel):
 def get_user(db, username: str):
     # Simulação de recuperação de usuário do banco de dados
     with db.cursor() as cursor:
-        cursor.execute("SELECT * FROM usuarios WHERE login = %s;", (username,))
+        cursor.execute("SELECT * FROM usuarios WHERE email = %s;", (username,))
         return cursor.fetchone()
 
 # Função para autenticar o usuário

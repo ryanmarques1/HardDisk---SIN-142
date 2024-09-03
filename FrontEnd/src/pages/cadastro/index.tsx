@@ -1,41 +1,61 @@
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/dist/client/router';
-import { useState } from 'react';
-import { FormCadastro } from '../../components/Cadastro/FormLogin';
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import api from "../../api/axios";
 import { Wrapper } from '../../components/Cadastro/Wrapper';
+import { FormCadastro, FormData } from '../../components/Cadastro/FormLogin';
 
 export default function CadastroPage() {
-  const router = useRouter();
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | undefined>(undefined);
 
-  type FormData = {
-    nome: string;
-    sobrenome: string;
-    cpf: string;
-    email: string;
-    senha: string;
-    confirmarSenha: string;
-    aceitarTermos: boolean;
+  const getFilteredData = (data: FormData) => {
+    const { nome, cpf, data_nascimento, email, senha, tel } = data;
+    return { nome, cpf, data_nascimento, email, senha, tel };
   };
 
-  const handleLogin = async (formData: FormData) => {
-    const response = await signIn('credentials', {
-      formData,
-      redirect: false,
-    });
-
-    if (!response?.ok) {
-      setError('Usuário ou senha inválidos');
+  const handleCadastro = async (formData: FormData) => {
+    setError(undefined);
+  
+    if (formData.senha !== formData.confirmarSenha) {
+      setError("As senhas não coincidem.");
       return;
     }
 
-    const redirect = router.query?.redirect || '/';
-    router.push('/app/home');
+    const filteredData = getFilteredData(formData);
+  
+    try {
+      const response = await api.post("/cadastro", filteredData);
+  
+      console.log(response); // Verifique a resposta aqui
+  
+      if (response.data) {
+        // Loga automaticamente após o cadastro
+        const result: any = await signIn("credentials", {
+          redirect: false,
+          email: formData.email,
+          password: formData.senha,
+        });
+  
+        if (result.error) {
+          setError(result.error);
+        } else {
+          window.location.href = "/";
+        }
+      }
+    } catch (error:any) {
+      if (error.response) {
+        console.error("Erro de validação:", error.response.data);
+        setError(error.response.data.message || "Erro ao tentar cadastrar");
+      } else {
+        console.error("Erro ao tentar cadastrar:", error);
+        setError("Erro ao tentar cadastrar");
+      }
+    }
   };
+  
 
   return (
     <Wrapper>
-      <FormCadastro onRegister={handleLogin} errorMessage={error} />
+      <FormCadastro onRegister={handleCadastro} errorMessage={error} />
     </Wrapper>
   );
 }

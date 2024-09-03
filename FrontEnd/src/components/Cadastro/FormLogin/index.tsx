@@ -3,6 +3,7 @@ import { TextInput } from '../TextInput';
 import * as Styled from '../../../styles/Login/LoginComponents/FormLogin';
 import { Button } from '../Button';
 import styled from 'styled-components';
+import { validateCPF, validateEmail } from './validators'; // Importing validation functions
 
 export type FormCadastroProps = {
   errorMessage?: string;
@@ -11,19 +12,18 @@ export type FormCadastroProps = {
 
 export type FormData = {
   nome: string;
-  sobrenome: string;
-  data_nasc: string;
+  data_nascimento: string;
   cpf: string;
   email: string;
   senha: string;
   confirmarSenha: string;
   aceitarTermos: boolean;
-  cell: string;
+  tel: string;
 };
 
 const ScrollableDiv = styled.div`
-  max-height: 90vw; /* Define a altura máxima para o scroll */
-  overflow-y: auto; /* Ativa o scroll vertical */
+  max-height: 90vw;
+  overflow-y: auto;
   padding-top: 80vh;
   padding-bottom: 5vh;
 `;
@@ -31,34 +31,36 @@ const ScrollableDiv = styled.div`
 export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) => {
   const [formData, setFormData] = useState<FormData>({
     nome: '',
-    sobrenome: '',
-    data_nasc: '',
     cpf: '',
+    data_nascimento: '',
     email: '',
     senha: '',
     confirmarSenha: '',
     aceitarTermos: false,
-    cell: '',
+    tel: '',
   });
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const newErrors: Record<string, string> = {};
     if (!formData.nome) newErrors.nome = 'Nome é obrigatório';
-    if (!formData.sobrenome) newErrors.sobrenome = 'Sobrenome é obrigatório';
-    if (!formData.data_nasc) newErrors.data_nasc = "Data de Nascimento é obrigatório"
+    if (!formData.data_nascimento) newErrors.data_nascimento = 'Data de Nascimento é obrigatória';
     if (!formData.cpf) newErrors.cpf = 'CPF é obrigatório';
+    else if (!validateCPF(formData.cpf.replace(/\D/g, ''))) newErrors.cpf = 'CPF inválido';
+
     if (!formData.email) newErrors.email = 'Email é obrigatório';
+    else if (!validateEmail(formData.email)) newErrors.email = 'Email inválido';
+
     if (!formData.senha) newErrors.senha = 'Senha é obrigatória';
     if (formData.senha !== formData.confirmarSenha)
       newErrors.confirmarSenha = 'As senhas não coincidem';
     if (!formData.aceitarTermos)
       newErrors.aceitarTermos = 'Você deve aceitar os termos de uso';
-    if (!formData.cell) newErrors.cell = 'Número de celular é obrigatório';
+    if (!formData.tel) newErrors.tel = 'Número de celular é obrigatório';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -75,8 +77,10 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
   };
 
   const handleInputChange = (name: string, value: string | boolean) => {
-    setFormData({ ...formData, [name]: value });
-    setErrors({ ...errors, [name]: '' });
+    let formattedValue = value as string;
+
+    setFormData((prevData) => ({ ...prevData, [name]: formattedValue }));
+    setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
   };
 
   return (
@@ -92,18 +96,12 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
           error={errors.nome}
         />
         <TextInput
-          name="sobrenome"
-          label="Sobrenome"
-          onInputChange={(v) => handleInputChange('sobrenome', v)}
-          value={formData.sobrenome}
-          error={errors.sobrenome}
-        />
-        <TextInput
-          name="data_nasc"
+          name="data_nascimento"
           label="Data de Nascimento"
-          onInputChange={(v) => handleInputChange('data_nasc', v)}
-          value={formData.data_nasc}
-          error={errors.data_nasc}
+          onInputChange={(v) => handleInputChange('data_nascimento', v)}
+          value={formData.data_nascimento}
+          error={errors.data_nascimento}
+          type="text" // Set type to text to use custom formatting
         />
         <TextInput
           name="cpf"
@@ -111,14 +109,15 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
           onInputChange={(v) => handleInputChange('cpf', v)}
           value={formData.cpf}
           error={errors.cpf}
+          type="text" // Set type to text to use custom formatting
         />
         <TextInput
-          name="cell"
+          name="tel"
           label="Celular"
-          onInputChange={(v) => handleInputChange('cell', v)}
-          value={formData.cell}
-          error={errors.cell}
-          type="password"
+          onInputChange={(v) => handleInputChange('tel', v)}
+          value={formData.tel}
+          error={errors.tel}
+          type="text" // Set type to text to use custom formatting
         />
         <TextInput
           name="email"
@@ -144,7 +143,17 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
           error={errors.confirmarSenha}
           type="password"
         />
-        
+
+        <label>
+          <input
+            type="checkbox"
+            name="aceitarTermos"
+            checked={formData.aceitarTermos}
+            onChange={(e) => handleInputChange('aceitarTermos', e.target.checked)}
+          />
+          Aceitar os Termos e Condições
+        </label>
+
         {errors.aceitarTermos && (
           <Styled.ErrorMessage>{errors.aceitarTermos}</Styled.ErrorMessage>
         )}

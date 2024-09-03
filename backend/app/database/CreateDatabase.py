@@ -50,12 +50,11 @@ def create_tables():
             nome VARCHAR(255) NOT NULL,
             cpf VARCHAR(11) NOT NULL UNIQUE,
             data_nascimento DATE NOT NULL,
-            email VARCHAR(255) UNIQUE,
-            login VARCHAR(50) NOT NULL UNIQUE,
+            email VARCHAR(255) NOT NULL UNIQUE,
             senha VARCHAR(255) NOT NULL,
             tel VARCHAR(20),
             saldo NUMERIC DEFAULT 0,
-            chave_pix VARCHAR(255)
+            user_id_core VARCHAR(255)
         )
         """,
         """
@@ -82,7 +81,8 @@ def create_tables():
             user_id INTEGER NOT NULL REFERENCES usuarios(id),
             tipo_chave VARCHAR(255) NOT NULL,
             chave_pix VARCHAR(255) NOT NULL,
-            data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            chave_pix_id_core VARCHAR(255)
         )
         """
     )

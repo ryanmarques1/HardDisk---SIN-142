@@ -16,17 +16,16 @@ export const PixRegister: React.FC = () => {
   const { data: session } = useSession();
 
   useEffect(() => {
-    // Fetch chaves PIX da API quando o componente é montado
     const fetchKeys = async () => {
       if (session?.user?.id) {
         try {
           const response = await api.get(`/chave_pix`, {
             params: { user_id: session.user.id },
             headers: {
-              Authorization: `Bearer ${session?.accessToken}`, // Incluindo o token de acesso
+              Authorization: `Bearer ${session?.accessToken}`,
             },
           });
-          setKeys(response.data.map((item: any) => ({ type: item.tipo_chave, key: item.chave_pix })));
+          setKeys(response.data.map((item: any) => ({ type: item.tipo_chave, key: item.chave_pix})));
         } catch (error) {
           console.error("Erro ao buscar chaves PIX:", error);
         }
@@ -45,18 +44,71 @@ export const PixRegister: React.FC = () => {
     }
   }, [selectedOption]);
 
-  const handleRegister = (): void => {
+  const validateCPF = (cpf: string): boolean => {
+    cpf = cpf.replace(/\D/g, ""); // Remove caracteres não numéricos
+    if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(cpf.charAt(i)) * (10 - i);
+    let remainder = 11 - (sum % 11);
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(cpf.charAt(9))) return false;
+
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(cpf.charAt(i)) * (11 - i);
+    remainder = 11 - (sum % 11);
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    return remainder === parseInt(cpf.charAt(10));
+  };
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleRegister = async (): Promise<void> => {
     if (selectedOption && pixKey) {
       const existingKey = keys.find(key => key.type === selectedOption);
 
       if (existingKey) {
         setErrorMessage(`Já existe uma chave registrada para o tipo ${selectedOption}.`);
-      } else {
+        return;
+      }
+
+      if (selectedOption === "CPF" && !validateCPF(pixKey)) {
+        setErrorMessage("CPF inválido. Por favor, insira um CPF válido.");
+        return;
+      }
+
+      if (selectedOption === "Email" && !validateEmail(pixKey)) {
+        setErrorMessage("E-mail inválido. Por favor, insira um E-mail válido.");
+        return;
+      }
+
+      try {
+        const response = await api.post(
+          `/chave_pix`,
+          {
+            tipo_chave: selectedOption,
+            chave_pix: pixKey,
+            user_id: session?.user?.id,
+            user_id_core: "f0a42262-9d6f-41be-8b87-678f76a20bd5",
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${session?.accessToken}`,
+            },
+          }
+        );
+
         const newKey: PixKey = { type: selectedOption, key: pixKey };
         setKeys([...keys, newKey]);
         setSelectedOption("");
         setPixKey(""); // Limpa o campo de chave após o registro
         setErrorMessage(""); // Limpa a mensagem de erro se o registro for bem-sucedido
+      } catch (error) {
+        console.error("Erro ao registrar a chave PIX:", error);
+        setErrorMessage("Erro ao registrar a chave PIX. Tente novamente.");
       }
     }
   };
@@ -67,21 +119,34 @@ export const PixRegister: React.FC = () => {
 
   const formatPixKey = (key: string, type: string): string => {
     switch (type) {
-      case "cpf":
+      case "CPF":
         return key.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
       case "Email":
       case "Telefone":
-        return key; // Sem formatação adicional necessária
+        return key;
       case "Chave Aleatoria":
-        return key; // Chave aleatória sem formatação adicional
+        return key;
       default:
         return key;
     }
   };
 
-  const handleDelete = (index: number): void => {
-    const updatedKeys = keys.filter((_, i) => i !== index);
-    setKeys(updatedKeys);
+  const handleDelete = async (index: number): Promise<void> => {
+    const keyToDelete = keys[index];
+    try {
+      await api.delete(`/chave_pix`, {
+        data: { chave_pix: keyToDelete.key, user_id: session?.user?.id },
+        headers: {
+          Authorization: `Bearer ${session?.accessToken}`,
+        },
+      });
+
+      const updatedKeys = keys.filter((_, i) => i !== index);
+      setKeys(updatedKeys);
+    } catch (error) {
+      console.error("Erro ao deletar a chave PIX:", error);
+      setErrorMessage("Erro ao deletar a chave PIX. Tente novamente.");
+    }
   };
 
   return (
@@ -109,26 +174,32 @@ export const PixRegister: React.FC = () => {
           value={formatPixKey(pixKey, selectedOption)}
           onChange={(e) => setPixKey(e.target.value)}
           placeholder="Insira a chave PIX"
-          disabled={selectedOption === "Chave Aleatoria"} // Desabilita o campo de chave PIX apenas se a opção Chave Aleatória for selecionada
+          disabled={selectedOption === "Chave Aleatoria"}
         />
       </Box>
-      
+
       <Box>
-        {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>} {/* Exibe a mensagem de erro */}
+        {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
       </Box>
 
       <Button onClick={handleRegister}>Registrar Chave</Button>
 
       <TitleRK>Chaves Registradas</TitleRK>
       <Box>
-        <KeyList>
-          {keys.map((keyItem, index) => (
-            <KeyItem key={index}>
-              <span>{keyItem.type}: {formatPixKey(keyItem.key, keyItem.type)}</span>
-              <DeleteButton onClick={() => handleDelete(index)}>Deletar</DeleteButton>
-            </KeyItem>
-          ))}
-        </KeyList>
+        {keys.length === 0 ? (
+          <KeyItem style={{width: "100%"}}>
+            <span style={{color: "#a3a3a3"}}>Nenhuma chave PIX cadastrada.</span>
+          </KeyItem>
+        ) : (
+          <KeyList>
+            {keys.map((keyItem, index) => (
+              <KeyItem key={index}>
+                <span>{keyItem.type}: {formatPixKey(keyItem.key, keyItem.type)}</span>
+                <DeleteButton onClick={() => handleDelete(index)}>Deletar</DeleteButton>
+              </KeyItem>
+            ))}
+          </KeyList>
+        )}
       </Box>
     </BasicContainer>
   );
