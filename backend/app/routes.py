@@ -4,7 +4,6 @@ from fastapi.responses import JSONResponse
 from validate_docbr import CPF
 from app.models.UserModel import CadastroData, LoginData, ValorData, ChavePixData, DeleteChavePixData, SaldoData, PixKeyRequest, TransferenciaData
 from app.services.auth import authenticate_user, create_access_token, get_current_user
-from app.services.coreServices import get_core_service, CoreService
 from app.database.Conection import get_db
 import app.services.userService as user_services
 from jose import JWTError, jwt
@@ -41,12 +40,12 @@ def get_operacoes_endpoint(user_id: int, db=Depends(get_db), current_user=Depend
     return user_services.get_operacoes(db, user_id)
 
 @router.post("/chave_pix")
-def create_chave_pix(request: PixKeyRequest, db=Depends(get_db), core_service: CoreService = Depends(get_core_service), current_user=Depends(get_current_user)):
-    return user_services.set_chave_pix(db, request.user_id, request.tipo_chave, request.chave_pix, request.user_id_core, core_service)
+def create_chave_pix(request: PixKeyRequest, db=Depends(get_db), current_user=Depends(get_current_user)):
+    return user_services.set_chave_pix(db, request.user_id, request.tipo_chave, request.chave_pix, request.user_id_core)
 
 @router.delete("/chave_pix")
-def delete_chave_pix(data: DeleteChavePixData, db=Depends(get_db), core_service: CoreService = Depends(get_core_service), current_user=Depends(get_current_user)):
-    return user_services.delete_chave_pix(db, data.chave_pix, data.user_id, core_service)
+def delete_chave_pix(data: DeleteChavePixData, db=Depends(get_db), current_user=Depends(get_current_user)):
+    return user_services.delete_chave_pix(db, data.chave_pix, data.user_id)
 
 @router.get("/chave_pix")
 def get_chave_pix_by_user_id_endpoint(user_id: int, db=Depends(get_db), current_user=Depends(get_current_user)):
@@ -61,5 +60,5 @@ def retirar_saldo_endpoint(user_id: int, valor: float, db=Depends(get_db), curre
     return user_services.retirar_saldo(db, user_id, valor)
 
 @router.post("/transacao")
-def request_transacao(request: TransferenciaData, db=Depends(get_db), core_service: CoreService = Depends(get_core_service), current_user=Depends(get_current_user)):
-    return user_services.request_transacao(db, request.usuario_id, request.chave_pix, request.valor, request.user_id_core, core_service)
+def request_transacao(request: TransferenciaData, db=Depends(get_db), current_user=Depends(get_current_user)):
+    return user_services.request_transacao(db, request.usuario_id, request.chave_pix, request.valor, request.user_id_core)

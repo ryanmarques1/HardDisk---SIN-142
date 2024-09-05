@@ -20,4 +20,16 @@ def get_rabbitmq_connection():
     except Exception as e:
         logging.error(f"Erro ao conectar com RabbitMQ no host {RABBITMQ_HOST} e porta {RABBITMQ_PORT}: {e}")
         raise e
+    
+def get_rabbitmq_connection_core_service():
+    try:
+        credentials = pika.PlainCredentials('user', 'password')
+        parameters = pika.ConnectionParameters(host='rabbitmq', port=5672, credentials=credentials)
+        connection = pika.BlockingConnection(parameters)
+        channel = connection.channel()
+        logging.info(f"Conexão com RabbitMQ estabelecida com sucesso no host rabbitmq e porta 5672.")
+        return connection, channel
+    except Exception as e:
+        logging.error(f"Erro ao conectar com RabbitMQ no host rabbitmq e porta 5672: {e}")
+        raise e
 

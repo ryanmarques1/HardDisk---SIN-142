@@ -1,92 +1,84 @@
-import requests
-import time
-from threading import Thread
+from uuid import uuid4
+import pika
+import json
 from fastapi import HTTPException
+from app.services.rabbitmq import get_rabbitmq_connection_core_service
 
-class CoreService:
-    def __init__(self, login_url, instituicao_id, instituicao_secret):
-        self.login_url = login_url
-        self.instituicao_id = instituicao_id
-        self.instituicao_secret = instituicao_secret
-        self.token = None
-        self.expiration_time = None
+CORE_REQUEST_QUEUE = 'core_request_queue'
+CORE_RESPONSE_QUEUE = 'core_response_queue'
 
-    def login(self):
-        response = requests.post(f"{self.login_url}/auth/", json={"instituicao_id": self.instituicao_id, "instituicao_secret": self.instituicao_secret})
-        if response.status_code == 200:
-            self.token = response.json().get("access_token")
-            self.expiration_time = time.time() + response.json().get("validateTime")
-            print("Login bem-sucedido, token adquirido.")
-        else:
-            raise Exception("Falha ao fazer login na API do Banco Central")
 
-    def revalidate_token(self):
-        while True:
-            time_to_sleep = self.expiration_time - time.time()
-            if time_to_sleep > 0:
-                time.sleep(time_to_sleep)
-            self.login()  # Revalida o token
-            print("Token revalidado com sucesso.")
-
-    def get_token(self):
-        if not self.token or time.time() > self.expiration_time:
-            self.login()
-        return self.token
-
-    def create_pix_key(self, chave_pix, tipo_chave, user_id):
-        try:
-            response = requests.post(
-                f"{self.login_url}/chave_pix/",
-                json={"chave_pix": chave_pix, "tipo_chave": tipo_chave, "usuario_id": user_id, "instituicao_id": self.instituicao_id},
-                headers={"Authorization": f"Bearer {self.get_token()}"}
-            )
-            if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail="Erro ao criar a chave PIX no core")
-            return response.json()
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    def delete_pix_key(self, chave_pix):
-        try:
-            response = requests.delete(
-                f"{self.login_url}/chave_pix/{chave_pix}",
-                headers={"Authorization": f"Bearer {self.get_token()}"}
-            )
-            if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail="Erro ao deletar a chave PIX no core")
-            return response.json()
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    def request_transacao_core(self, user_id_core, chave_pix, valor):
-        try:
-            response = requests.post(
-                f"{self.login_url}/transacao",
-                json={"usuario_id": user_id_core, "instituicao_id": self.instituicao_id, "chave_pix": chave_pix, "valor": valor},
-                headers={"Authorization": f"Bearer {self.get_token()}"}
-            )
-            print(response.json())
-            if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail = "Erro ao efetuar transacao no core")
-            return response.json()
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-# Função para fornecer o CoreService como dependência
-def get_core_service():
-    # Criação da instância do CoreService
-    core_service = CoreService(
-        login_url="https://projetosdufv.live",  # Substitua pelo URL correto
-        instituicao_id="4786a354-b336-4c47-a47a-b2e1ea10fc29",
-        instituicao_secret="$2b$12$Cea4mD6FUagDXiiJfqmNw.rupw8CrE0av832niu/xkGtfDly/tRHu"
-    )
-
-    # Loga ao serviço e começa a revalidação do token em uma thread separada
-    core_service.login()
-    Thread(target=core_service.revalidate_token, daemon=True).start()
-
+# Função para enviar mensagem e aguardar a resposta via RabbitMQ
+def enviar_mensagem_para_fila_e_aguardar_resposta(action: str, data: dict):
     try:
-        yield core_service
-    finally:
-        # Aqui, você poderia adicionar alguma lógica para liberar recursos, se necessário
-        pass
+        connection, channel = get_rabbitmq_connection_core_service()
+        channel.queue_declare(queue=CORE_REQUEST_QUEUE, durable=True)
+        channel.queue_declare(queue=CORE_RESPONSE_QUEUE, durable=True)
+
+        correlation_id = str(uuid4())
+
+        message = {
+            "action": action,
+            **data
+        }
+
+        # Enviar a mensagem para a fila de requisição
+        channel.basic_publish(
+            exchange='',
+            routing_key=CORE_REQUEST_QUEUE,
+            body=json.dumps(message),
+            properties=pika.BasicProperties(
+                reply_to=CORE_RESPONSE_QUEUE,
+                correlation_id=correlation_id,
+                delivery_mode=2,  # Persistente
+            )
+        )
+
+        response = None
+
+        # Callback para tratar a resposta
+        def on_response(ch, method, properties, body):
+            nonlocal response
+            if properties.correlation_id == correlation_id:
+                response = json.loads(body)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        # Consumir a fila de resposta
+        channel.basic_consume(queue=CORE_RESPONSE_QUEUE, on_message_callback=on_response)
+
+        # Esperar a resposta
+        while response is None:
+            connection.process_data_events()
+
+        connection.close()
+        return response
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao enviar mensagem para o RabbitMQ: {e}")
+
+
+# Serviço para criar chave PIX
+def create_pix_key(chave_pix: dict):
+    data = {
+        "data": chave_pix
+    }
+    return enviar_mensagem_para_fila_e_aguardar_resposta("create_pix", data)
+
+
+# Serviço para deletar chave PIX
+def delete_pix_key(chave_pix: str):
+    data = {
+        "chave_pix": chave_pix
+    }
+    return enviar_mensagem_para_fila_e_aguardar_resposta("delete_pix", data)
+
+
+# Serviço para realizar transação
+def request_transacao_core(user_id_core: str, chave_pix: str, valor: float):
+    data = {
+        "usuario_id": user_id_core,
+        "chave_pix": chave_pix,
+        "valor": valor,
+        "instituicao_id": "9d67c2ce-c0e4-4656-bbb8-dd8ff5cc94fd"  # Instituição ID fixa
+    }
+    return enviar_mensagem_para_fila_e_aguardar_resposta("transacao", data)

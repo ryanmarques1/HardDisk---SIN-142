@@ -12,3 +12,5 @@ env/
 
 # Kubernetes
 *.yaml
+
+node_modules

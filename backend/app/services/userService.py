@@ -4,7 +4,7 @@ from psycopg2.extras import RealDictCursor
 from datetime import timedelta, datetime
 from app.services.auth import create_access_token, verify_password, get_password_hash
 from app.models.UserModel import CadastroData, LoginData, ValorData, ChavePixData, TransferenciaData
-from app.services.coreServices import CoreService
+from app.services.coreServices import create_pix_key, delete_pix_key, request_transacao_core
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 1800
 
@@ -150,11 +150,11 @@ def get_operacoes(db, user_id):
         return operacoes
 
 # Função para definir uma chave PIX para o usuário
-def set_chave_pix(db, user_id, tipo_chave, chave_pix, user_id_core, core_service: CoreService):
+def set_chave_pix(db, user_id, tipo_chave, chave_pix, user_id_core):
     with db.cursor(cursor_factory=RealDictCursor) as cursor:
         try:
             # Primeiro, tenta criar a chave no core
-            result = core_service.create_pix_key(chave_pix, tipo_chave, user_id_core)
+            result = create_pix_key(chave_pix, tipo_chave, user_id_core)
 
             # Se o core retornar sucesso, insere a nova chave PIX no banco de dados privado
             cursor.execute(
@@ -171,14 +171,14 @@ def set_chave_pix(db, user_id, tipo_chave, chave_pix, user_id_core, core_service
             return {"error": str(e)}
 
 # Função para deletar uma chave PIX
-def delete_chave_pix(db, chave_pix, user_id, core_service: CoreService):
+def delete_chave_pix(db, chave_pix, user_id):
     with db.cursor(cursor_factory=RealDictCursor) as cursor:
         try:
             cursor.execute("SELECT * FROM chave_pix WHERE user_id = %s AND chave_pix = %s;", (user_id, chave_pix))
             resposta = cursor.fetchone()
             chave_pix_id_core = resposta.get('chave_pix_id_core')
             # Primeiro, tenta deletar a chave no core
-            core_service.delete_pix_key(chave_pix_id_core)
+            delete_pix_key(chave_pix_id_core)
 
             # Se o core retornar sucesso, deleta a chave PIX no banco de dados privado
             cursor.execute(
@@ -246,11 +246,11 @@ def retirar_saldo(db, user_id, valor):
 
 
 # Função para definir uma chave PIX para o usuário
-def request_transacao(db, usuario_id, chave_pix, valor, user_id_core, core_service: CoreService):
+def request_transacao(db, usuario_id, chave_pix, valor, user_id_core):
     with db.cursor(cursor_factory=RealDictCursor) as cursor:
         try:
             # Primeiro, tenta criar a chave no core
-            core_service.request_transacao_core(user_id_core, chave_pix, valor)
+            request_transacao_core(user_id_core, chave_pix, valor)
 
             # Se o core retornar sucesso, insere a nova chave PIX no banco de dados privado
             cursor.execute(

@@ -1,0 +1,16 @@
+{
+  "name": "api_link_core",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "CrisBid",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "amqplib": "^0.10.4",
+    "axios": "^1.7.7",
+    "express": "^4.19.2"
+  }
+}
