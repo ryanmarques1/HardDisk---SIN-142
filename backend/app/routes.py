@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import JSONResponse
 from validate_docbr import CPF
-from app.models.UserModel import CadastroData, LoginData, ValorData, ChavePixData, DeleteChavePixData, TransferenciaData, SaldoData, PixKeyRequest
+from app.models.UserModel import CadastroData, LoginData, ValorData, ChavePixData, DeleteChavePixData, SaldoData, PixKeyRequest, TransferenciaData
 from app.services.auth import authenticate_user, create_access_token, get_current_user
 from app.services.coreServices import get_core_service, CoreService
 from app.database.Conection import get_db
@@ -59,3 +59,7 @@ def get_user_by_id_endpoint(user_id: int, db=Depends(get_db), current_user=Depen
 @router.put("/retirar-saldo")
 def retirar_saldo_endpoint(user_id: int, valor: float, db=Depends(get_db), current_user=Depends(get_current_user)):
     return user_services.retirar_saldo(db, user_id, valor)
+
+@router.post("/transacao")
+def request_transacao(request: TransferenciaData, db=Depends(get_db), core_service: CoreService = Depends(get_core_service), current_user=Depends(get_current_user)):
+    return user_services.request_transacao(db, request.usuario_id, request.chave_pix, request.valor, request.user_id_core, core_service)

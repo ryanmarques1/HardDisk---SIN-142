@@ -58,6 +58,20 @@ class CoreService:
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
+    def request_transacao_core(self, user_id_core, chave_pix, valor):
+        try:
+            response = requests.post(
+                f"{self.login_url}/transacao",
+                json={"usuario_id": user_id_core, "instituicao_id": self.instituicao_id, "chave_pix": chave_pix, "valor": valor},
+                headers={"Authorization": f"Bearer {self.get_token()}"}
+            )
+            print(response.json())
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail = "Erro ao efetuar transacao no core")
+            return response.json()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
 # Função para fornecer o CoreService como dependência
 def get_core_service():
     # Criação da instância do CoreService

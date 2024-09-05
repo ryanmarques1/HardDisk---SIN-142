@@ -1,14 +1,42 @@
 import React, { useState } from "react";
+import { useSession } from "next-auth/react";
+import api from "../../api/axios";
 import { BasicContainer, Box, Input, Button, Label, Select } from "./styles";
 
 export const PixCard: React.FC = () => {
+  const { data: session } = useSession();
   const [pixKey, setPixKey] = useState<string>("");
   const [amount, setAmount] = useState<number | "">("");
   const [selectedOption, setSelectedOption] = useState<string>("");
+  const [message, setMessage] = useState<string>(""); 
 
-  const handleConfirm = (): void => {
-    // Lógica para confirmar o envio do PIX
-    console.log(`Chave PIX: ${pixKey}, Valor: ${amount}, Tipo: ${selectedOption}`);
+  const handleConfirm = async (): Promise<void> => {
+    if (session?.user?.id) {
+      const requestBody = {
+        usuario_id: session?.user?.id,
+        chave_pix: pixKey,
+        valor: amount,
+        user_id_core:"f0a42262-9d6f-41be-8b87-678f76a20bd5"
+      };
+      try {
+        const response = await api.post(`/transacao`,
+          requestBody,
+          {
+            headers: 
+            {
+              Authorization: `Bearer ${session?.accessToken}`,
+            },
+          }
+        );
+        if (response.data.sucesso) {
+          setMessage("Transferência realizada com sucesso!"); // Mensagem de sucesso
+        } else {
+          setMessage(`Erro: ${response.data.mensagem || "Falha ao processar a transação."}`);
+        }
+      } catch (error) {
+        setMessage("Ocorreu um erro ao tentar processar a transação.");
+      }
+    };
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -81,6 +109,10 @@ export const PixCard: React.FC = () => {
       </Box>
       
       <Button onClick={handleConfirm}>Confirmar</Button>
+
+      <Box>
+        { message && <p>{message}</p>}
+      </Box>
     </BasicContainer>
   );
 };

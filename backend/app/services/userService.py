@@ -243,3 +243,33 @@ def retirar_saldo(db, user_id, valor):
         db.commit()
         
     return {"message": "Saldo retirado com sucesso"}
+
+
+# Função para definir uma chave PIX para o usuário
+def request_transacao(db, usuario_id, chave_pix, valor, user_id_core, core_service: CoreService):
+    with db.cursor(cursor_factory=RealDictCursor) as cursor:
+        try:
+            # Primeiro, tenta criar a chave no core
+            core_service.request_transacao_core(user_id_core, chave_pix, valor)
+
+            # Se o core retornar sucesso, insere a nova chave PIX no banco de dados privado
+            cursor.execute(
+                """
+                    INSERT INTO operacoes (tipo, user_id, valor)
+                    VALUES (%s, %s, %s);
+                """,
+                ('pix', usuario_id, valor)
+            )
+            cursor.execute(
+                """
+                    UPDATE usuarios
+                    SET saldo = saldo - %s
+                    WHERE id = %s;
+                """,
+            (valor, usuario_id)
+        )
+            db.commit()
+            return {"message": "Transação efetuada com sucesso"}
+        except Exception as e:
+            db.rollback()
+            return {"error": str(e)}

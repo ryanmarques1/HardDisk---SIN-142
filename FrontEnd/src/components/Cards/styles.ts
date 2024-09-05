@@ -318,3 +318,9 @@ export const HistoryItem = styled.div`
     border-bottom: none;
   }
 `;
+
+const Message = styled.p`
+  color: #333; // Cor do texto
+  font-size: 16px;
+  margin: 0;
+`;

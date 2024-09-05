@@ -28,6 +28,32 @@ const ScrollableDiv = styled.div`
   padding-bottom: 5vh;
 `;
 
+const TermsLabel = styled.label`
+  display: flex;
+  align-items: center;
+  // margin-top: 10px;
+  margin-bottom: 40px;
+  font-size: 14px;
+  color: #333;
+
+  input {
+    margin-right: 10px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  a {
+    color: #007BFF;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:hover {
+      color: #0056b3;
+    }
+  }
+`;
+
 export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) => {
   const [formData, setFormData] = useState<FormData>({
     nome: '',
@@ -83,6 +109,8 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
     setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
   };
 
+
+  
   return (
     <Styled.Wrapper onSubmit={handleSubmit}>
       <ScrollableDiv className='FormL'>
@@ -144,7 +172,7 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
           type="password"
         />
 
-        <label>
+        <TermsLabel>
           <input
             type="checkbox"
             name="aceitarTermos"
@@ -152,7 +180,7 @@ export const FormCadastro = ({ errorMessage, onRegister }: FormCadastroProps) =>
             onChange={(e) => handleInputChange('aceitarTermos', e.target.checked)}
           />
           Aceitar os Termos e Condições
-        </label>
+        </TermsLabel>
 
         {errors.aceitarTermos && (
           <Styled.ErrorMessage>{errors.aceitarTermos}</Styled.ErrorMessage>

@@ -35,5 +35,7 @@ class DeleteChavePixData(BaseModel):
     chave_pix: str
 
 class TransferenciaData(BaseModel):
-    chave_pix_destino: str
+    usuario_id: int
+    chave_pix: str
     valor: float
+    user_id_core: str
